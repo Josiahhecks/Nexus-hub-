@@ -1,193 +1,140 @@
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/stysscythe/script/main/LibTest.lua"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+local Window = Library.CreateLib("Nexus Hub", "Ocean")
 
-local Window = Library.Window('Nexus Hub V1')
+-- Create Toggle Button
+local ToggleGui = Instance.new("ScreenGui")
+local ToggleButton = Instance.new("ImageButton")
 
--- Initialize Tabs
-local MainTab = Window.CreateTab('Core')
-local VisualTab = Window.CreateTab('Graphics')
-local CameraTab = Window.CreateTab('Camera')
-local PlayerTab = Window.CreateTab('Player')
-local WorldTab = Window.CreateTab('World')
+-- GUI Settings
+ToggleGui.Name = "ToggleGui"
+ToggleGui.Parent = game:GetService("CoreGui")
+ToggleGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ToggleGui.ResetOnSpawn = false
 
--- Core Features
-MainTab.CreateDivider("Essential Features")
+-- Button Settings
+ToggleButton.Name = "ToggleButton"
+ToggleButton.Parent = ToggleGui
+ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.BackgroundTransparency = 1
+ToggleButton.Position = UDim2.new(0.120833337, 0, 0.0952890813, 0)
+ToggleButton.Size = UDim2.new(0, 50, 0, 50)
+ToggleButton.Image = "rbxassetid://7072725342" -- Toilet icon
+ToggleButton.Draggable = true
+ToggleButton.Active = true
 
-MainTab.CreateToggle("Auto Re-join", function(state)
-    if state then
-        game:GetService("CoreGui").RobloxPromptGui.promptOverlay.ChildAdded:Connect(function(child)
-            if child.Name == 'ErrorPrompt' then
-                game:GetService('TeleportService'):Teleport(game.PlaceId)
-            end
-        end)
-    end
-end)
-
-MainTab.CreateToggle("Anti AFK", function(state)
-    if state then
-        local VirtualUser = game:GetService("VirtualUser")
-        game:GetService("Players").LocalPlayer.Idled:Connect(function()
-            VirtualUser:CaptureController()
-            VirtualUser:ClickButton2(Vector2.new())
-        end)
-    end
-end)
-
-MainTab.CreateButton("Server Hop", function()
-    local servers = game:GetService("HttpService"):JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
-    for _,server in pairs(servers.data) do
-        if server.playing < server.maxPlayers then
-            game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, server.id)
-            break
-        end
-    end
-end)
-
--- Player Modifications
-PlayerTab.CreateDivider("Character Mods")
-
-PlayerTab.CreateSlider("WalkSpeed", 16, 500, function(value)
-    game:GetService("Players").LocalPlayer.Character.Humanoid.WalkSpeed = value
-end)
-
-PlayerTab.CreateSlider("JumpPower", 50, 500, function(value)
-    game:GetService("Players").LocalPlayer.Character.Humanoid.JumpPower = value
-end)
-
-PlayerTab.CreateToggle("Infinite Jump", function(state)
-    if state then
-        game:GetService("UserInputService").JumpRequest:Connect(function()
-            game:GetService("Players").LocalPlayer.Character:FindFirstChildOfClass('Humanoid'):ChangeState("Jumping")
-        end)
-    end
-end)
-
-PlayerTab.CreateToggle("Noclip", function(state)
-    if state then
-        local function NoclipLoop()
-            for _, child in pairs(game:GetService("Players").LocalPlayer.Character:GetDescendants()) do
-                if child:IsA("BasePart") and child.CanCollide == true then
-                    child.CanCollide = false
-                end
-            end
-        end
-        _G.Noclip = game:GetService("RunService").Stepped:Connect(NoclipLoop)
-    else
-        if _G.Noclip then
-            _G.Noclip:Disconnect()
-        end
-    end
-end)
-
--- Visual Enhancements
-VisualTab.CreateDivider("Graphics Enhancement")
-
-VisualTab.CreateToggle("RTX Mode", function(state)
-    if state then
-        local lighting = game:GetService("Lighting")
-        
-        local blur = Instance.new("BlurEffect")
-        blur.Size = 3
-        blur.Parent = lighting
-        
-        local bloom = Instance.new("BloomEffect")
-        bloom.Intensity = 1
-        bloom.Size = 24
-        bloom.Threshold = 0.5
-        bloom.Parent = lighting
-        
-        local colorCorrection = Instance.new("ColorCorrectionEffect")
-        colorCorrection.Brightness = 0.1
-        colorCorrection.Contrast = 0.5
-        colorCorrection.Saturation = 0.5
-        colorCorrection.TintColor = Color3.fromRGB(255, 255, 255)
-        colorCorrection.Parent = lighting
-        
-        lighting.Ambient = Color3.fromRGB(33, 33, 33)
-        lighting.Brightness = 3
-        lighting.ExposureCompensation = 0.24
-        lighting.GlobalShadows = true
-    else
-        game:GetService("Lighting"):ClearAllChildren()
-    end
-end)
-
-VisualTab.CreateToggle("Remove Fog", function(state)
-    if state then
-        game:GetService("Lighting").FogEnd = 1000000
-        game:GetService("Lighting").FogStart = 0
-    else
-        game:GetService("Lighting").FogEnd = 500
-    end
-end)
-
--- World Modifications
-WorldTab.CreateDivider("Environment")
-
-WorldTab.CreateSlider("Time of Day", 0, 24, function(value)
-    game:GetService("Lighting").ClockTime = value
-end)
-
-WorldTab.CreateToggle("Remove Water", function(state)
-    for _, water in pairs(workspace:GetDescendants()) do
-        if water:IsA("WaterBase") then
-            water.Visible = not state
-        end
-    end
-end)
-
--- Camera Controls
-CameraTab.CreateDivider("Camera Tools")
-
-local freeCam = false
-CameraTab.CreateToggle("Free Camera", function(state)
-    freeCam = state
-    if state then
-        local camera = workspace.CurrentCamera
-        local player = game:GetService("Players").LocalPlayer
-        local UserInputService = game:GetService("UserInputService")
-        
-        local SPEED_MULTIPLIER = 50
-        local cameraPos = camera.CFrame.Position
-        local cameraRot = camera.CFrame.Rotation
-        
-        game:GetService("RunService").RenderStepped:Connect(function()
-            if not freeCam then return end
-            
-            local delta = UserInputService:GetMouseDelta()
-            cameraRot = cameraRot * CFrame.fromEulerAnglesYXZ(-delta.Y/300, -delta.X/300, 0)
-            
-            local moveVector = Vector3.new()
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-                moveVector = moveVector + cameraRot.LookVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                moveVector = moveVector - cameraRot.LookVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-                moveVector = moveVector - cameraRot.RightVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                moveVector = moveVector + cameraRot.RightVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.E) then
-                moveVector = moveVector + Vector3.new(0, 1, 0)
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.Q) then
-                moveVector = moveVector - Vector3.new(0, 1, 0)
-            end
-            
-            cameraPos = cameraPos + moveVector * SPEED_MULTIPLIER * 0.016
-            camera.CFrame = CFrame.new(cameraPos) * cameraRot
-        end)
-    end
-end)
-
-CameraTab.CreateSlider("Camera Speed", 1, 100, function(value)
-    SPEED_MULTIPLIER = value
-end)
-
--- UI Toggle
-MainTab.CreateKeybind("Toggle UI", Enum.KeyCode.RightAlt, function()
+-- Toggle Function
+ToggleButton.MouseButton1Click:Connect(function()
     Library:ToggleUI()
 end)
 
+-- Main Tab
+local MainTab = Window:NewTab("Main")
+local MainSection = MainTab:NewSection("Player Modifications")
+
+MainSection:NewSlider("WalkSpeed", "Changes your walk speed", 500, 16, function(s)
+    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = s
+end)
+
+MainSection:NewSlider("JumpPower", "Changes your jump power", 350, 50, function(s)
+    game.Players.LocalPlayer.Character.Humanoid.JumpPower = s
+end)
+
+MainSection:NewToggle("Infinite Jump", "Lets you jump infinitely", function(state)
+    local InfiniteJumpEnabled = state
+    game:GetService("UserInputService").JumpRequest:connect(function()
+        if InfiniteJumpEnabled then
+            game:GetService"Players".LocalPlayer.Character:FindFirstChildOfClass'Humanoid':ChangeState("Jumping")
+        end
+    end)
+end)
+
+-- Visual Tab
+local VisualTab = Window:NewTab("Visual")
+local VisualSection = VisualTab:NewSection("Visual Modifications")
+
+VisualSection:NewToggle("Full Bright", "Makes everything bright", function(state)
+    if state then
+        game:GetService("Lighting").Brightness = 2
+        game:GetService("Lighting").ClockTime = 14
+        game:GetService("Lighting").FogEnd = 100000
+        game:GetService("Lighting").GlobalShadows = false
+    else
+        game:GetService("Lighting").Brightness = 1
+        game:GetService("Lighting").ClockTime = 12
+        game:GetService("Lighting").FogEnd = 10000
+        game:GetService("Lighting").GlobalShadows = true
+    end
+end)
+
+-- Teleport Tab
+local TeleportTab = Window:NewTab("Teleport")
+local TeleportSection = TeleportTab:NewSection("Teleport Options")
+
+TeleportSection:NewButton("Teleport to Random Player", "Teleports to a random player", function()
+    local players = game:GetService("Players"):GetPlayers()
+    local randomPlayer = players[math.random(1, #players)]
+    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = randomPlayer.Character.HumanoidRootPart.CFrame
+end)
+
+-- Combat Tab
+local CombatTab = Window:NewTab("Combat")
+local CombatSection = CombatTab:NewSection("Combat Features")
+
+CombatSection:NewToggle("Auto Click", "Automatically clicks for you", function(state)
+    getgenv().AutoClick = state
+    while getgenv().AutoClick do
+        wait(0.1)
+        game:GetService("VirtualUser"):ClickButton1(Vector2.new())
+    end
+end)
+
+-- Settings Tab
+local SettingsTab = Window:NewTab("Settings")
+local SettingsSection = SettingsTab:NewSection("UI Settings")
+
+SettingsSection:NewKeybind("Toggle UI", "Toggle the UI visibility", Enum.KeyCode.RightControl, function()
+    Library:ToggleUI()
+end)
+
+-- Credits Tab
+local CreditsTab = Window:NewTab("Credits")
+local CreditsSection = CreditsTab:NewSection("Created by Josiah")
+CreditsSection:NewLabel("UI Library: Kavo UI")
+
+-- Make the toggle button draggable
+local UserInputService = game:GetService("UserInputService")
+local dragging
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    ToggleButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+ToggleButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = ToggleButton.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+ToggleButton.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
+    end
+end)
