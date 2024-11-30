@@ -1,140 +1,226 @@
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
-local Window = Library.CreateLib("Nexus Hub", "Ocean")
+-- Nexus Hub V3.0 Ultimate
+local repo = 'https://raw.githubusercontent.com/wally-rblx/LinoriaLib/main/'
+local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
+local ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))()
+local SaveManager = loadstring(game:HttpGet(repo .. 'addons/SaveManager.lua'))()
 
--- Create Toggle Button
-local ToggleGui = Instance.new("ScreenGui")
-local ToggleButton = Instance.new("ImageButton")
+-- Create Window
+local Window = Library:CreateWindow({
+    Title = 'Nexus Hub V3.0 Ultimate',
+    Center = true, 
+    AutoShow = true,
+})
 
--- GUI Settings
-ToggleGui.Name = "ToggleGui"
-ToggleGui.Parent = game:GetService("CoreGui")
-ToggleGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ToggleGui.ResetOnSpawn = false
+-- Create Tabs
+local Tabs = {
+    Main = Window:AddTab('Main'),
+    Combat = Window:AddTab('Combat'),
+    Visual = Window:AddTab('Visual'),
+    Movement = Window:AddTab('Movement'),
+    Teleport = Window:AddTab('Teleport'),
+    World = Window:AddTab('World'),
+    Troll = Window:AddTab('Troll'),
+    Misc = Window:AddTab('Misc'),
+    Settings = Window:AddTab('Settings'),
+}
 
--- Button Settings
-ToggleButton.Name = "ToggleButton"
-ToggleButton.Parent = ToggleGui
-ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-ToggleButton.BackgroundTransparency = 1
-ToggleButton.Position = UDim2.new(0.120833337, 0, 0.0952890813, 0)
-ToggleButton.Size = UDim2.new(0, 50, 0, 50)
-ToggleButton.Image = "rbxassetid://7072725342" -- Toilet icon
-ToggleButton.Draggable = true
-ToggleButton.Active = true
+-- Main Tab Features
+local MainBox = Tabs.Main:AddLeftGroupbox('Character Modifications')
 
--- Toggle Function
-ToggleButton.MouseButton1Click:Connect(function()
-    Library:ToggleUI()
-end)
+MainBox:AddSlider('WalkSpeed', {
+    Text = 'Walk Speed',
+    Default = 16,
+    Min = 16,
+    Max = 500,
+    Rounding = 0,
+    Callback = function(Value)
+        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+    end
+})
 
--- Main Tab
-local MainTab = Window:NewTab("Main")
-local MainSection = MainTab:NewSection("Player Modifications")
+MainBox:AddSlider('JumpPower', {
+    Text = 'Jump Power',
+    Default = 50,
+    Min = 50,
+    Max = 350,
+    Rounding = 0,
+    Callback = function(Value)
+        game.Players.LocalPlayer.Character.Humanoid.JumpPower = Value
+    end
+})
 
-MainSection:NewSlider("WalkSpeed", "Changes your walk speed", 500, 16, function(s)
-    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = s
-end)
+local MainBox2 = Tabs.Main:AddRightGroupbox('Character States')
 
-MainSection:NewSlider("JumpPower", "Changes your jump power", 350, 50, function(s)
-    game.Players.LocalPlayer.Character.Humanoid.JumpPower = s
-end)
-
-MainSection:NewToggle("Infinite Jump", "Lets you jump infinitely", function(state)
-    local InfiniteJumpEnabled = state
-    game:GetService("UserInputService").JumpRequest:connect(function()
-        if InfiniteJumpEnabled then
-            game:GetService"Players".LocalPlayer.Character:FindFirstChildOfClass'Humanoid':ChangeState("Jumping")
+MainBox2:AddToggle('GodMode', {
+    Text = 'God Mode',
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            local Character = game.Players.LocalPlayer.Character
+            if Character then
+                local Clone = Character:Clone()
+                Clone.Parent = game.Workspace
+                Character.Humanoid.BreakJointsOnDeath = false
+                Character.Humanoid.Health = math.huge
+            end
         end
-    end)
-end)
-
--- Visual Tab
-local VisualTab = Window:NewTab("Visual")
-local VisualSection = VisualTab:NewSection("Visual Modifications")
-
-VisualSection:NewToggle("Full Bright", "Makes everything bright", function(state)
-    if state then
-        game:GetService("Lighting").Brightness = 2
-        game:GetService("Lighting").ClockTime = 14
-        game:GetService("Lighting").FogEnd = 100000
-        game:GetService("Lighting").GlobalShadows = false
-    else
-        game:GetService("Lighting").Brightness = 1
-        game:GetService("Lighting").ClockTime = 12
-        game:GetService("Lighting").FogEnd = 10000
-        game:GetService("Lighting").GlobalShadows = true
     end
-end)
+})
 
--- Teleport Tab
-local TeleportTab = Window:NewTab("Teleport")
-local TeleportSection = TeleportTab:NewSection("Teleport Options")
+-- Combat Features
+local CombatLeft = Tabs.Combat:AddLeftGroupbox('Combat')
 
-TeleportSection:NewButton("Teleport to Random Player", "Teleports to a random player", function()
-    local players = game:GetService("Players"):GetPlayers()
-    local randomPlayer = players[math.random(1, #players)]
-    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = randomPlayer.Character.HumanoidRootPart.CFrame
-end)
-
--- Combat Tab
-local CombatTab = Window:NewTab("Combat")
-local CombatSection = CombatTab:NewSection("Combat Features")
-
-CombatSection:NewToggle("Auto Click", "Automatically clicks for you", function(state)
-    getgenv().AutoClick = state
-    while getgenv().AutoClick do
-        wait(0.1)
-        game:GetService("VirtualUser"):ClickButton1(Vector2.new())
+CombatLeft:AddToggle('KillAura', {
+    Text = 'Kill Aura',
+    Default = false,
+    Callback = function(Value)
+        _G.KillAura = Value
+        while _G.KillAura and task.wait() do
+            for _, player in ipairs(game.Players:GetPlayers()) do
+                if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") then
+                    local distance = (player.Character.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                    if distance <= 15 then
+                        local args = {
+                            [1] = player.Character.Humanoid
+                        }
+                        game:GetService("ReplicatedStorage").RemoteEvent:FireServer(unpack(args))
+                    end
+                end
+            end
+        end
     end
-end)
+})
 
--- Settings Tab
-local SettingsTab = Window:NewTab("Settings")
-local SettingsSection = SettingsTab:NewSection("UI Settings")
+-- Visual Features
+local VisualLeft = Tabs.Visual:AddLeftGroupbox('ESP Features')
 
-SettingsSection:NewKeybind("Toggle UI", "Toggle the UI visibility", Enum.KeyCode.RightControl, function()
-    Library:ToggleUI()
-end)
+VisualLeft:AddToggle('PlayerESP', {
+    Text = 'Player ESP',
+    Default = false,
+    Callback = function(Value)
+        _G.ESP = Value
+        while _G.ESP and task.wait(1) do
+            for _, player in ipairs(game.Players:GetPlayers()) do
+                if player ~= game.Players.LocalPlayer and player.Character then
+                    if not player.Character:FindFirstChild("Highlight") then
+                        local highlight = Instance.new("Highlight")
+                        highlight.Parent = player.Character
+                        highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                    end
+                end
+            end
+        end
+    end
+})
 
--- Credits Tab
-local CreditsTab = Window:NewTab("Credits")
-local CreditsSection = CreditsTab:NewSection("Created by Josiah")
-CreditsSection:NewLabel("UI Library: Kavo UI")
+-- Troll Features
+local TrollLeft = Tabs.Troll:AddLeftGroupbox('Troll Features')
 
--- Make the toggle button draggable
-local UserInputService = game:GetService("UserInputService")
-local dragging
-local dragInput
-local dragStart
-local startPos
+TrollLeft:AddToggle('FlingAll', {
+    Text = 'Fling All Players',
+    Default = false,
+    Callback = function(Value)
+        _G.Fling = Value
+        local player = game.Players.LocalPlayer
+        local character = player.Character
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            while _G.Fling and task.wait() do
+                for _, otherPlayer in ipairs(game.Players:GetPlayers()) do
+                    if otherPlayer ~= player and otherPlayer.Character and otherPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        character.HumanoidRootPart.CFrame = otherPlayer.Character.HumanoidRootPart.CFrame
+                        character.HumanoidRootPart.Velocity = Vector3.new(500, 500, 500)
+                    end
+                end
+            end
+        end
+    end
+})
 
-local function update(input)
-    local delta = input.Position - dragStart
-    ToggleButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-end
-
-ToggleButton.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = ToggleButton.Position
+TrollLeft:AddToggle('ChatSpam', {
+    Text = 'Chat Spam',
+    Default = false,
+    Callback = function(Value)
+        _G.ChatSpam = Value
+        local messages = {
+            "Nexus Hub on top!",
+            "Get good!",
+            "L + Ratio",
+            "EZ WIN",
+            "Too easy!",
+            "Skills issue detected"
+        }
         
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
+        while _G.ChatSpam and task.wait(1) do
+            game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(messages[math.random(1, #messages)], "All")
+        end
+    end
+})
+
+-- Movement Features
+local MovementLeft = Tabs.Movement:AddLeftGroupbox('Movement')
+
+MovementLeft:AddToggle('Flight', {
+    Text = 'Flight',
+    Default = false,
+    Callback = function(Value)
+        _G.Flight = Value
+        local player = game.Players.LocalPlayer
+        while _G.Flight and task.wait() do
+            if player.Character and player.Character:FindFirstChild("Humanoid") then
+                player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Flying)
+            end
+        end
+    end
+})
+
+MovementLeft:AddToggle('Noclip', {
+    Text = 'Noclip',
+    Default = false,
+    Callback = function(Value)
+        _G.Noclip = Value
+        game:GetService('RunService').Stepped:Connect(function()
+            if _G.Noclip then
+                for _, part in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+                    if part:IsA('BasePart') then
+                        part.CanCollide = false
+                    end
+                end
             end
         end)
     end
-end)
+})
 
-ToggleButton.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
-end)
+-- World Features
+local WorldLeft = Tabs.World:AddLeftGroupbox('World Modifications')
 
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        update(input)
+WorldLeft:AddToggle('FullBright', {
+    Text = 'Full Bright',
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            game:GetService("Lighting").Brightness = 2
+            game:GetService("Lighting").ClockTime = 14
+            game:GetService("Lighting").FogEnd = 100000
+            game:GetService("Lighting").GlobalShadows = false
+        else
+            game:GetService("Lighting").Brightness = 1
+            game:GetService("Lighting").ClockTime = 12
+            game:GetService("Lighting").FogEnd = 10000
+            game:GetService("Lighting").GlobalShadows = true
+        end
     end
-end)
+})
+
+-- Settings
+local SettingsBox = Tabs.Settings:AddLeftGroupbox('Menu Settings')
+
+-- Add Theme Manager
+ThemeManager:ApplyToGroupbox(SettingsBox)
+
+-- Add Save Manager
+local SaveBox = Tabs.Settings:AddRightGroupbox('Save/Load Configuration')
+SaveManager:ApplyToGroupbox(SaveBox)
+
+-- Initialize
+SaveManager:LoadAutoloadConfig()
