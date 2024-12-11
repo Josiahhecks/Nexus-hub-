@@ -1,4 +1,5 @@
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/REDzHUB/RedHub/main/source"))()
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/GreenDeno/Venyx-UI-Library/main/source.lua"))()
+local venyx = library.new("Velocity Hub", 5013109572)
 
 -- Services
 local Players = game:GetService("Players")
@@ -52,85 +53,53 @@ local function calculate_parry_distance()
     return 15
 end
 
--- Create main window
-local Window = Library:Window({
-    Text = "Velocity Hub"
-})
+-- Create pages
+local combat = venyx:addPage("Combat", 5012544693)
+local visual = venyx:addPage("Visual", 5012544693)
+local info = venyx:addPage("Info", 5012544693)
+local theme = venyx:addPage("Theme", 5012544693)
 
--- Combat section
-local CombatTab = Window:Tab({
-    Text = "Combat"
-})
+-- Combat sections
+local autoParry = combat:addSection("Auto Parry")
+local spamSection = combat:addSection("Spam Settings")
 
-CombatTab:Toggle({
-    Text = "Auto Parry",
-    Callback = function(state)
-        autoParryEnabled = state
+autoParry:addToggle("Enable Auto Parry", nil, function(value)
+    autoParryEnabled = value
+end)
+
+spamSection:addToggle("Auto Spam", nil, function(value)
+    autoSpamEnabled = value
+    while autoSpamEnabled do
+        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+        task.wait(spamInterval)
     end
-})
+end)
 
-CombatTab:Toggle({
-    Text = "Auto Spam",
-    Callback = function(state)
-        autoSpamEnabled = state
-        while autoSpamEnabled do
-            VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-            VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-            task.wait(spamInterval)
-        end
-    end
-})
+spamSection:addSlider("Spam Interval", 0.05, 0.05, 0.5, function(value)
+    spamInterval = value
+end)
 
-CombatTab:Slider({
-    Text = "Spam Interval",
-    Min = 0.05,
-    Max = 0.5,
-    Default = 0.1,
-    Callback = function(value)
-        spamInterval = value
-    end
-})
+-- Visual sections
+local rangeSection = visual:addSection("Range Visualizer")
 
--- Visual section
-local VisualTab = Window:Tab({
-    Text = "Visual"
-})
+rangeSection:addToggle("Show Range", nil, function(value)
+    visualise = value
+end)
 
-VisualTab:Toggle({
-    Text = "Show Range",
-    Callback = function(state)
-        visualise = state
-    end
-})
+rangeSection:addColorPicker("Range Color", Color3.fromRGB(255, 0, 0), function(color)
+    sphereColor = color
+end)
 
-VisualTab:ColorPicker({
-    Text = "Range Color",
-    Default = Color3.fromRGB(255, 0, 0),
-    Callback = function(color)
-        sphereColor = color
-    end
-})
-
-VisualTab:Slider({
-    Text = "Transparency",
-    Min = 0,
-    Max = 100,
-    Default = 50,
-    Callback = function(value)
-        sphereTransparency = value / 100
-    end
-})
+rangeSection:addSlider("Transparency", 50, 0, 100, function(value)
+    sphereTransparency = value / 100
+end)
 
 -- Info section
-local InfoTab = Window:Tab({
-    Text = "Info"
-})
+local playerSection = info:addSection("Player Info")
+local statsLabel = playerSection:addLabel("Loading stats...")
 
-local playerInfo = InfoTab:Label({
-    Text = "Loading player info..."
-})
-
--- Update player stats
+-- Update stats
 spawn(function()
     while wait(5) do
         local stats = string.format([[
@@ -141,9 +110,18 @@ Ping: %d ms]],
         Player.AccountAge,
         math.floor(Player:GetNetworkPing() * 1000))
         
-        playerInfo:Set(stats)
+        statsLabel:Set(stats)
     end
 end)
+
+-- Theme customization
+local colors = theme:addSection("Colors")
+
+for theme, color in pairs(themes) do
+    colors:addColorPicker(theme, color, function(color3)
+        venyx:setTheme(theme, color3)
+    end)
+end
 
 -- Visualizer creation and monitoring
 local function create_visualizer()
