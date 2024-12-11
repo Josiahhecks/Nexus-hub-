@@ -1,5 +1,4 @@
-local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/GreenDeno/Venyx-UI-Library/main/source.lua"))()
-local venyx = library.new("Velocity Hub", 5013109572)
+local Mercury = loadstring(game:HttpGet("https://raw.githubusercontent.com/deeeity/mercury-lib/master/src.lua"))()
 
 -- Services
 local Players = game:GetService("Players")
@@ -16,6 +15,90 @@ local sphereTransparency = 0.5
 local autoParryEnabled = false
 local autoSpamEnabled = false
 local spamInterval = 0.1
+
+-- Create GUI
+local GUI = Mercury:Create{
+    Name = "Velocity Hub",
+    Size = UDim2.fromOffset(600, 400),
+    Theme = Mercury.Themes.Dark,
+    Link = "https://github.com/deeeity/mercury-lib"
+}
+
+-- Create tabs
+local CombatTab = GUI:Tab{
+    Name = "Combat",
+    Icon = "rbxassetid://6034509993"
+}
+
+local VisualTab = GUI:Tab{
+    Name = "Visual",
+    Icon = "rbxassetid://6034509993"
+}
+
+-- Combat features
+CombatTab:Toggle{
+    Name = "Auto Parry",
+    StartingState = false,
+    Description = "Automatically parries incoming balls",
+    Callback = function(state)
+        autoParryEnabled = state
+    end
+}
+
+CombatTab:Toggle{
+    Name = "Auto Spam",
+    StartingState = false,
+    Description = "Automatically spams parry",
+    Callback = function(state)
+        autoSpamEnabled = state
+        while autoSpamEnabled do
+            VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+            VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+            task.wait(spamInterval)
+        end
+    end
+}
+
+CombatTab:Slider{
+    Name = "Spam Interval",
+    Default = 0.1,
+    Min = 0.05,
+    Max = 0.5,
+    Precise = 2,
+    Description = "Adjust spam click speed",
+    Callback = function(value)
+        spamInterval = value
+    end
+}
+
+-- Visual features
+VisualTab:Toggle{
+    Name = "Show Range",
+    StartingState = false,
+    Description = "Shows parry range visualization",
+    Callback = function(state)
+        visualise = state
+    end
+}
+
+VisualTab:ColorPicker{
+    Name = "Range Color",
+    Default = Color3.fromRGB(255, 0, 0),
+    Callback = function(color)
+        sphereColor = color
+    end
+}
+
+VisualTab:Slider{
+    Name = "Transparency",
+    Default = 50,
+    Min = 0,
+    Max = 100,
+    Description = "Adjust range transparency",
+    Callback = function(value)
+        sphereTransparency = value / 100
+    end
+}
 
 -- Core functions
 local function get_player()
@@ -51,76 +134,6 @@ local function calculate_parry_distance()
         return math.clamp(ball.Velocity.Magnitude / 2.4 + ping, 15, 200)
     end
     return 15
-end
-
--- Create pages
-local combat = venyx:addPage("Combat", 5012544693)
-local visual = venyx:addPage("Visual", 5012544693)
-local info = venyx:addPage("Info", 5012544693)
-local theme = venyx:addPage("Theme", 5012544693)
-
--- Combat sections
-local autoParry = combat:addSection("Auto Parry")
-local spamSection = combat:addSection("Spam Settings")
-
-autoParry:addToggle("Enable Auto Parry", nil, function(value)
-    autoParryEnabled = value
-end)
-
-spamSection:addToggle("Auto Spam", nil, function(value)
-    autoSpamEnabled = value
-    while autoSpamEnabled do
-        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-        task.wait(spamInterval)
-    end
-end)
-
-spamSection:addSlider("Spam Interval", 0.05, 0.05, 0.5, function(value)
-    spamInterval = value
-end)
-
--- Visual sections
-local rangeSection = visual:addSection("Range Visualizer")
-
-rangeSection:addToggle("Show Range", nil, function(value)
-    visualise = value
-end)
-
-rangeSection:addColorPicker("Range Color", Color3.fromRGB(255, 0, 0), function(color)
-    sphereColor = color
-end)
-
-rangeSection:addSlider("Transparency", 50, 0, 100, function(value)
-    sphereTransparency = value / 100
-end)
-
--- Info section
-local playerSection = info:addSection("Player Info")
-local statsLabel = playerSection:addLabel("Loading stats...")
-
--- Update stats
-spawn(function()
-    while wait(5) do
-        local stats = string.format([[
-Player: %s
-Account Age: %d days
-Ping: %d ms]], 
-        Player.Name,
-        Player.AccountAge,
-        math.floor(Player:GetNetworkPing() * 1000))
-        
-        statsLabel:Set(stats)
-    end
-end)
-
--- Theme customization
-local colors = theme:addSection("Colors")
-
-for theme, color in pairs(themes) do
-    colors:addColorPicker(theme, color, function(color3)
-        venyx:setTheme(theme, color3)
-    end)
 end
 
 -- Visualizer creation and monitoring
@@ -192,3 +205,11 @@ local function create_visualizer()
 end
 
 create_visualizer()
+
+-- Add notification
+GUI:Notification{
+    Title = "Velocity Hub",
+    Text = "Successfully loaded!",
+    Duration = 3,
+    Callback = function() end
+}
