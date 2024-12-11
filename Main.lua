@@ -1,4 +1,4 @@
-local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Rayfield/main/source'))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/REDzHUB/RedHub/main/source"))()
 
 -- Services
 local Players = game:GetService("Players")
@@ -12,24 +12,9 @@ local visualise = false
 local distanceMultiplier = 1
 local sphereColor = Color3.fromRGB(255, 0, 0)
 local sphereTransparency = 0.5
-
--- Combat settings
-local autoParryModes = {
-    normal = {
-        enabled = false,
-        delay = 0.5
-    },
-    aggressive = {
-        enabled = false,
-        delay = 0.25
-    }
-}
-
-local spamModes = {
-    manual = false,
-    auto = false,
-    interval = 0.1
-}
+local autoParryEnabled = false
+local autoSpamEnabled = false
+local spamInterval = 0.1
 
 -- Core functions
 local function get_player()
@@ -67,127 +52,96 @@ local function calculate_parry_distance()
     return 15
 end
 
-local function getPlayerStats()
-    local stats = {
-        coins = Player.leaderstats.Coins.Value,
-        skills = #Player.Skills:GetChildren(),
-        swords = #Player.Inventory.Swords:GetChildren(),
-        wins = Player.leaderstats.Wins.Value,
-        level = Player.leaderstats.Level.Value
-    }
-    return stats
-end
-
--- UI Setup
-local Window = Rayfield:CreateWindow({
-    Name = "Velocity Hub V2",
-    LoadingTitle = "Velocity Hub",
-    LoadingSubtitle = "by VelocityTeam",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "VelocityConfig",
-        FileName = "BladeConfig"
-    }
+-- Create main window
+local Window = Library:Window({
+    Text = "Velocity Hub"
 })
 
--- Combat Tab
-local CombatTab = Window:CreateTab("Combat", 4483362458)
+-- Combat section
+local CombatTab = Window:Tab({
+    Text = "Combat"
+})
 
-CombatTab:CreateToggle({
-    Name = "Enhanced Auto Parry",
-    CurrentValue = false,
-    Flag = "enhancedParry",
-    Callback = function(Value)
-        autoParryModes.normal.enabled = Value
+CombatTab:Toggle({
+    Text = "Auto Parry",
+    Callback = function(state)
+        autoParryEnabled = state
     end
 })
 
-CombatTab:CreateToggle({
-    Name = "Aggressive Auto Parry",
-    CurrentValue = false,
-    Flag = "aggressiveParry",
-    Callback = function(Value)
-        autoParryModes.aggressive.enabled = Value
-    end
-})
-
-CombatTab:CreateToggle({
-    Name = "Auto Spam",
-    CurrentValue = false,
-    Flag = "autoSpam",
-    Callback = function(Value)
-        spamModes.auto = Value
-        while spamModes.auto do
+CombatTab:Toggle({
+    Text = "Auto Spam",
+    Callback = function(state)
+        autoSpamEnabled = state
+        while autoSpamEnabled do
             VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
             VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-            task.wait(spamModes.interval)
+            task.wait(spamInterval)
         end
     end
 })
 
-CombatTab:CreateKeybind({
-    Name = "Manual Spam",
-    CurrentKeybind = "X",
-    HoldToInteract = true,
-    Flag = "manualSpam",
-    Callback = function(Value)
-        while Value do
-            VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-            VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-            task.wait(0.1)
-        end
+CombatTab:Slider({
+    Text = "Spam Interval",
+    Min = 0.05,
+    Max = 0.5,
+    Default = 0.1,
+    Callback = function(value)
+        spamInterval = value
     end
 })
 
--- Visual Tab
-local VisualTab = Window:CreateTab("Visual", 4483345998)
+-- Visual section
+local VisualTab = Window:Tab({
+    Text = "Visual"
+})
 
-VisualTab:CreateToggle({
-    Name = "Show Parry Range",
-    CurrentValue = false,
-    Flag = "parryVisual",
-    Callback = function(Value)
-        visualise = Value
+VisualTab:Toggle({
+    Text = "Show Range",
+    Callback = function(state)
+        visualise = state
     end
 })
 
-VisualTab:CreateColorPicker({
-    Name = "Visualizer Color",
-    Color = Color3.fromRGB(255, 0, 0),
-    Flag = "visualColor",
-    Callback = function(Value)
-        sphereColor = Value
+VisualTab:ColorPicker({
+    Text = "Range Color",
+    Default = Color3.fromRGB(255, 0, 0),
+    Callback = function(color)
+        sphereColor = color
     end
 })
 
-VisualTab:CreateSlider({
-    Name = "Visualizer Transparency",
-    Range = {0, 1},
-    Increment = 0.1,
-    CurrentValue = 0.5,
-    Flag = "visualTransparency",
-    Callback = function(Value)
-        sphereTransparency = Value
+VisualTab:Slider({
+    Text = "Transparency",
+    Min = 0,
+    Max = 100,
+    Default = 50,
+    Callback = function(value)
+        sphereTransparency = value / 100
     end
 })
 
--- Stats Tab
-local StatsTab = Window:CreateTab("Player Info", 4483345998)
-local statsLabel = StatsTab:CreateLabel("Loading stats...")
+-- Info section
+local InfoTab = Window:Tab({
+    Text = "Info"
+})
 
--- Update stats periodically
+local playerInfo = InfoTab:Label({
+    Text = "Loading player info..."
+})
+
+-- Update player stats
 spawn(function()
-    while task.wait(5) do
-        local stats = getPlayerStats()
-        statsLabel:Set(string.format([[
+    while wait(5) do
+        local stats = string.format([[
 Player: %s
 Account Age: %d days
-Coins: %d
-Skills Unlocked: %d
-Swords Owned: %d
-Wins: %d
-Level: %d
-]], Player.Name, Player.AccountAge, stats.coins, stats.skills, stats.swords, stats.wins, stats.level))
+Ping: %d ms]], 
+        Player.Name,
+        Player.AccountAge,
+        math.floor(Player:GetNetworkPing() * 1000))
+        
+        playerInfo:Set(stats)
     end
 end)
 
@@ -232,12 +186,7 @@ local function create_visualizer()
     end
 
     local function parry_if_valid(ball)
-        if ball and is_ball_within_visualizer(ball) and Player.Character:FindFirstChild("Highlight") then
-            if autoParryModes.aggressive.enabled then
-                task.wait(autoParryModes.aggressive.delay)
-            elseif autoParryModes.normal.enabled then
-                task.wait(autoParryModes.normal.delay)
-            end
+        if autoParryEnabled and ball and is_ball_within_visualizer(ball) and Player.Character:FindFirstChild("Highlight") then
             VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
             VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
         end
